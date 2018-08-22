@@ -1,10 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
+	<environments>
+	<!-- 测试环境配置 -->
+		<environment>
+			<description>线下crm自动化环境</description>
+			<rootUrl>http://192.168.10.201/djcrm</rootUrl>
+		    <headers>
+		        <!-- 默认json传至方式 -->
+		    </headers>
+		    <params>
+		    	<param name="test" value="value"></param>
+		    	<param name="first_currency" value=""></param>
+		    </params>
+		    <project_name>crm接口自动化测试报告demo</project_name>
+		</environment>
+		
+		
+		<environment>
+			<description>线下团购自动化环境</description>
+			  <rootUrl>http://192.168.10.202</rootUrl>
+		    <headers>
+		        <!-- 默认json传至方式 -->
+		    </headers>
+		    <params>
+		    	<param name="test" value="value"></param>
+		    	<param name="first_currency" value=""></param>
+		    </params>
+		    <project_name>纸板团购接口自动化测试报告demo</project_name>
+		</environment>
+		
+	</environments>
+	<!-- 线下crm环境 -->
     <rootUrl>http://192.168.10.201/djcrm</rootUrl>
     <headers>
         <!-- 配置为自己的参数 -->
-        <header name="apikey" value="123456"></header>
-        <header name="Cookie" value="token=DJCRM-59a477c8-129d-4719-92b1-967c05914dbf"></header>
     </headers>
     <params>
     	<param name="test" value="value"></param>

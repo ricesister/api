@@ -1,5 +1,12 @@
 package com.sen.api.beans;
 
+/**
+ * 
+ * @description 对应于api-data.xlsx实体类，面对Http接口
+ * @author fs
+ * @2018年8月22日
+ *
+ */
 public class ApiDataBean extends BaseBean {
 	private boolean run;
 	private String desc; // 接口描述

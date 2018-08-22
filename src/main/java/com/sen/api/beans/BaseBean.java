@@ -1,9 +1,10 @@
 package com.sen.api.beans;
 
 /**
- * 基础类
  * 
- * @author chenwx
+ * @description 外部驱动excel基类
+ * @author fs
+ * @2018年8月22日
  *
  */
 public class BaseBean {

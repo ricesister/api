@@ -15,6 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ * 
+ * @description 读取excel文件
+ * @author fs
+ * @2018年8月22日
+ *
+ */
 public class ExcelUtil {
 
 	/**
@@ -81,12 +89,26 @@ public class ExcelUtil {
 
 	}
 
+	
+	/**
+	 * excel数据转换成实体
+	 * @param clz 实体class对象
+	 * @param xssfWorkbook
+	 * @param sheetName sheet名称
+	 * @return
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 */
 	private static <T> List<T> transToObject(Class<T> clz,
 			Workbook xssfWorkbook, String sheetName)
 			throws InstantiationException, IllegalAccessException,
 			InvocationTargetException {
 		List<T> list = new ArrayList<T>();
 		Sheet xssfSheet = xssfWorkbook.getSheet(sheetName);
+		/**
+		 * 行头
+		 */
 		Row firstRow = xssfSheet.getRow(0);
 		if(null ==firstRow){
 			return list;
@@ -103,25 +125,37 @@ public class ExcelUtil {
 				}
 				T t = clz.newInstance();
 				List<Object> data = getRow(xssfRow);
-				//如果发现表数据的列数小于表头的列数，则自动填充为null，最后一位不动，用于添加sheetName数据
+				/**
+				 * 对列内容校验
+				 */
 				while(data.size()+1<heads.size()){
+					//TODO
 					data.add("");
 				}
 				data.add(sheetName);
 				setValue(t, data, heads, headMethod);
 				list.add(t);
 			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		return list;
 	}
 
+	
+	/**
+	 * run对应的setxx方法
+	 * @param clz
+	 * @param heads 行头List，有sheetname
+	 * @return
+	 */
 	private static Map<String, Method> getSetMethod(Class<?> clz,
 			List<Object> heads) {
 		Map<String, Method> map = new HashMap<String, Method>();
 		Method[] methods = clz.getMethods();
+		/**
+		 * 遍历头，反射赋值
+		 */
 		for (Object head : heads) {
 			// boolean find = false;
 			for (Method method : methods) {
@@ -140,6 +174,16 @@ public class ExcelUtil {
 		return map;
 	}
 
+	/**
+	 * 针对set方法输入参数类型不同，对行中每一列的参数转换后输入对象
+	 * @param obj 实体类
+	 * @param data 一整行的列值
+	 * @param heads 行头
+	 * @param methods 行对应set方法
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 */
 	private static void setValue(Object obj, List<Object> data,
 			List<Object> heads, Map<String, Method> methods)
 			throws IllegalArgumentException, IllegalAccessException,
@@ -183,6 +227,12 @@ public class ExcelUtil {
 		}
 	}
 
+	
+	/**
+	 * 根据行返回列的内容，返回一整行内容
+	 * @param xssfRow
+	 * @return
+	 */
 	private static List<Object> getRow(Row xssfRow) {
 		List<Object> cells = new ArrayList<Object>();
 		if (xssfRow != null) {
@@ -194,6 +244,11 @@ public class ExcelUtil {
 		return cells;
 	}
 
+	/**
+	 * 获取列的值，根据类型返回不同值
+	 * @param cell
+	 * @return
+	 */
 	private static String getValue(Cell cell) {
 		if (null == cell) {
 			return "";			

@@ -1,23 +1,49 @@
 package test.com.sen.api;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.util.EntityUtils;
 import org.dom4j.DocumentException;
 import org.testng.Assert;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
+import com.sen.api.beans.ApiDataBean;
 import com.sen.api.beans.BaseBean;
+import com.sen.api.configs.Config;
 import com.sen.api.utils.AssertUtil;
 import com.sen.api.utils.ExcelUtil;
+import com.sen.api.utils.FileUtil;
 import com.sen.api.utils.FunctionUtil;
+import com.sen.api.utils.RandomUtil;
 import com.sen.api.utils.ReportUtil;
+import com.sen.api.utils.SSLClient;
 import com.sen.api.utils.StringUtil;
 
 public class TestBase {
@@ -39,8 +65,17 @@ public class TestBase {
 			.compile("__(\\w*?)\\((([\\w\\\\\\/:\\.\\$]*,?)*)\\)");// __(\\w*?)\\((((\\w*)|(\\w*,))*)\\)
 																	// __(\\w*?)\\(((\\w*,?\\w*)*)\\)
 
+	
+	
+	/**
+	 * 存入公共参数池
+	 * @param map
+	 */
 	protected void setSaveDates(Map<String, String> map) {
+		if(map == null)
+			return;
 		saveDatas.putAll(map);
+		
 	}
 
 	/**
@@ -76,7 +111,7 @@ public class TestBase {
 
 	
 	/**
-	 * 把preparam参数加入公共参数池saveDatas
+	 * 讲xx=xx;xx=xx加入公共参数池saveDatas
 	 * @param preParam
 	 */
 	protected void savePreParam(String preParam) {
@@ -99,7 +134,7 @@ public class TestBase {
 
 	/**
 	 * 取公共参数的值  并替换参数
-	 *TODO 公共参数找不到该参数？？在哪里是公共参数
+	 *
 	 * 
 	 * @param param
 	 * @return
@@ -277,5 +312,227 @@ public class TestBase {
 			allExcelData.addAll(temArrayList); // 将excel数据添加至list
 		}
 		return allExcelData;
+	}
+	
+	/**
+	 * 确认睡眠时间
+	 * @param apiDataBean
+	 * @throws InterruptedException
+	 */
+	protected void checkSleep(ApiDataBean apiDataBean) throws InterruptedException {
+		if(apiDataBean.getSleep() > 0) {
+			// sleep休眠时间大于0的情况下进行暂停休眠
+			ReportUtil.log(String.format("sleep %s seconds",
+					apiDataBean.getSleep()));
+			Thread.sleep(apiDataBean.getSleep() * 1000);
+		}
+	} 
+	
+	
+	
+	/**
+	 * 拼接Url
+	 * @param shortUrl
+	 * @return
+	 */
+	protected String parseUrl(String rootUrl,String shortUrl,boolean rooUrlEndWithSlash) {
+		// 替换url中的参数
+		shortUrl = getCommonParam(shortUrl);
+		if (shortUrl.startsWith("http")) {
+			return shortUrl;
+		}
+		if (rooUrlEndWithSlash == shortUrl.startsWith("/")) {
+			if (rooUrlEndWithSlash) {
+				shortUrl = shortUrl.replaceFirst("/", "");
+			} else {
+				shortUrl = "/" + shortUrl;
+			}
+		}
+		return rootUrl + shortUrl;
+	}
+	
+	
+	/**
+	 * 读取配置
+	 * @param pathName
+	 * @return
+	 * @throws DocumentException 
+	 */
+	protected Config getConfig(String pathName) throws DocumentException {
+		String configFilePath = Paths.get(System.getProperty("user.dir"), pathName).toString();
+		ReportUtil.log("api config path:" + configFilePath);
+		System.out.println("api config path:" +configFilePath);
+		Config config = new Config(configFilePath);
+		return config;
+	}
+	
+	/**
+	 * 获取连接客户端
+	 * @param client
+	 * @return
+	 * @throws Exception
+	 */
+	protected HttpClient getClient(HttpClient client) throws Exception {
+		client = new SSLClient();
+		client.getParams().setParameter(
+				CoreConnectionPNames.CONNECTION_TIMEOUT, 60000); // 请求超时
+		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 60000); // 读取超时
+		return client;
+	}
+	
+	
+	protected Iterator<Object[]> getRunList(List<ApiDataBean> dataList){
+		List<Object[]> dataProvider = new ArrayList<Object[]>();
+		for (ApiDataBean data : dataList) {
+			if (data.isRun()) {
+				dataProvider.add(new Object[] { data });
+			}
+		}
+		return dataProvider.iterator();
+	}
+	
+	/**
+	 * 保存预存参数 用于后面接口参数中使用和接口返回验证中;处理接口请求参数
+	 * @param apiDataBean
+	 * @return
+	 */
+	protected String buildRequestParam(ApiDataBean apiDataBean) {
+		// 分析处理预参数 （函数生成的参数）
+		String preParam = buildParam(apiDataBean.getPreParam());
+		savePreParam(preParam);// 保存预存参数 用于后面接口参数中使用和接口返回验证中
+		// 处理参数
+		String apiParam = buildParam(apiDataBean.getParam());
+		return apiParam;
+
+	
+	}
+	
+	
+	/**
+	 * 封装请求方法
+	 *
+	 * @param url
+	 *            请求路径
+	 
+	 * @throws UnsupportedEncodingException
+	 */
+	protected HttpUriRequest parseHttpRequest(String url, String method, String param
+			,String rootUrl,boolean rooUrlEndWithSlash
+			,Header[] publicHeaders,boolean requestByFormData ) throws UnsupportedEncodingException {
+		// 处理url
+		url = parseUrl(rootUrl,url,rooUrlEndWithSlash);
+		ReportUtil.log("请求方式:" + method);
+		ReportUtil.log("请求路径:" + url);
+		ReportUtil.log("请求参数:" + param.replace("\r\n", "").replace("\n", ""));
+		//upload表示上传，也是使用post进行请求
+		if ("post".equalsIgnoreCase(method) || "upload".equalsIgnoreCase(method)) {
+			// 封装post方法
+			HttpPost postMethod = new HttpPost(url);
+			postMethod.setHeaders(publicHeaders);
+			//如果请求头的content-type的值包含form-data 或者 请求方法为upload(上传)时采用MultipartEntity形式
+			HttpEntity entity  = parseEntity(param,requestByFormData || "upload".equalsIgnoreCase(method));
+			postMethod.setEntity(entity);
+			return postMethod;
+		} else if ("put".equalsIgnoreCase(method)) {
+			// 封装put方法
+			HttpPut putMethod = new HttpPut(url);
+			putMethod.setHeaders(publicHeaders);
+			HttpEntity entity  = parseEntity(param,requestByFormData );
+			putMethod.setEntity(entity);
+			return putMethod;
+		} else if ("delete".equalsIgnoreCase(method)) {
+			// 封装delete方法
+			HttpDelete deleteMethod = new HttpDelete(url);
+			deleteMethod.setHeaders(publicHeaders);
+			return deleteMethod;
+		} else {
+			// 封装get方法
+			HttpGet getMethod = new HttpGet(url);
+			getMethod.setHeaders(publicHeaders);
+			return getMethod;
+		}
+	}
+	
+	
+	/**
+	 * 格式化参数，如果是form-data格式则将参数封装到MultipartEntity否则封装到StringEntity
+	 * @param param 参数
+	 * @param formData 是否使用form-data格式
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	@SuppressWarnings("unchecked")
+	protected HttpEntity parseEntity(String param,boolean formData) throws UnsupportedEncodingException{
+		if(formData){
+			Map<String, String> paramMap = JSON.parseObject(param,
+					HashMap.class);
+			MultipartEntity multiEntity = new MultipartEntity();
+			for (String key : paramMap.keySet()) {
+				String value = paramMap.get(key);
+				Matcher m = funPattern.matcher(value);
+				if (m.matches() && m.group(1).equals("bodyfile")) {
+					value = m.group(2);
+					multiEntity.addPart(key, new FileBody(new File(value)));
+				} else {
+					multiEntity.addPart(key, new StringBody(paramMap.get(key)));
+				}
+			}
+			return multiEntity;
+		}else{
+			return new StringEntity(param, "UTF-8");
+		}
+	}
+	
+	/**
+	 * 判断返回代码
+	 * @param response
+	 */
+	protected void checkStatus(HttpResponse response,ApiDataBean apiDataBean) {
+		int responseStatus = response.getStatusLine().getStatusCode();
+		ReportUtil.log("返回状态码："+responseStatus);
+		if (apiDataBean.getStatus()!= 0) {
+			Assert.assertEquals(responseStatus, apiDataBean.getStatus(),
+					"返回状态码与预期不符合!");
+		} 
+	}
+	
+	
+	protected String getResponseData(HttpResponse response) throws IllegalStateException, IOException {
+		String responseData;
+		HttpEntity respEntity = response.getEntity();
+		Header respContentType = response.getFirstHeader("Content-Type");
+		if (respContentType != null && respContentType.getValue() != null 
+				&&  (respContentType.getValue().contains("download") || respContentType.getValue().contains("octet-stream"))) {
+			String conDisposition = response.getFirstHeader(
+					"Content-disposition").getValue();
+			String fileType = conDisposition.substring(
+					conDisposition.lastIndexOf("."),
+					conDisposition.length());
+			String filePath = "download/" + RandomUtil.getRandom(8, false)
+					+ fileType;
+			InputStream is = response.getEntity().getContent();
+			Assert.assertTrue(FileUtil.writeFile(is, filePath), "下载文件失败。");
+			// 将下载文件的路径放到{"filePath":"xxxxx"}进行返回
+			responseData = "{\"filePath\":\"" + filePath + "\"}";
+			
+		} else {
+			responseData=EntityUtils.toString(respEntity, "UTF-8");
+		}
+		// 输出返回数据log
+		ReportUtil.log("返回结果:" + responseData);
+		return responseData;
+	}
+	
+	/**
+	 * 处理断言及保存save
+	 * @param responseData
+	 * @param apiDataBean
+	 */
+	protected void verify(String responseData,ApiDataBean apiDataBean) {
+		// 验证预期信息
+		verifyResult(responseData, apiDataBean.getVerify(),
+				apiDataBean.isContains());
+		// 对返回结果进行提取保存。
+		saveResult(responseData, apiDataBean.getSave());
 	}
 }

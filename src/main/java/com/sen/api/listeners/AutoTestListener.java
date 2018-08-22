@@ -14,7 +14,6 @@ public class AutoTestListener extends TestListenerAdapter {
 
 	@Override
 	public void onTestSuccess(ITestResult tr) {
-		// TODO Auto-generated method stub
 		TestngRetry.resetRetryCount();
 		super.onTestSuccess(tr);
 	}
