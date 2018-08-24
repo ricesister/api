@@ -11,6 +11,11 @@
 					<include name="tgTest"></include>
 				</methods>
 			</class>	
+			<class name="test.com.sen.api.ApiTest">
+				<methods>							
+					<include name="apiTest"></include>
+				</methods>
+			</class>	
 		</classes>
 	</test>
 	<listeners>	

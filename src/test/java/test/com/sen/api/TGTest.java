@@ -20,7 +20,7 @@ import java.util.*;
 
 /**
  * 
- * @description 团购接口测试
+ * @description 团购接口测试--测试框架使用
  * @author fs
  * @2018年8月22日
  *
@@ -137,13 +137,5 @@ public class TGTest extends TestBase{
 			throws DocumentException {
 		return getRunList(dataList);
 	}
-
-	
-	
-
-
-
-
-
 
 }
