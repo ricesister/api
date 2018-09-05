@@ -20,7 +20,7 @@ import java.util.*;
 public class ExtentTestNGIReporterListener implements IReporter {
     //生成的路径以及文件名
     private static final String OUTPUT_FOLDER = "test-output/";
-    private static final String FILE_NAME = "cps-api接口测试报告.html";
+    private static final String FILE_NAME = "CPS-Apireport.html";
     private ExtentReports extent;
 
     @Override

@@ -1,16 +1,30 @@
 package com.sen.api.listeners;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import javax.mail.internet.AddressException;
+
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.TestListenerAdapter;
 
+import com.sen.api.utils.MailUtil;
+import com.sun.xml.internal.messaging.saaj.packaging.mime.MessagingException;
+
 public class AutoTestListener extends TestListenerAdapter {
+	
+	/**
+     * 输出正文字段
+     */
+    public static int failCount;
+    public static int successCount;
+    public static int count;
+    public static int skipCount;
 
 	@Override
 	public void onTestSuccess(ITestResult tr) {
@@ -85,7 +99,31 @@ public class AutoTestListener extends TestListenerAdapter {
 				iterator.remove();
 			}
 		}
-
+		
+		/**
+		 * 邮件处理
+		 */
+		AutoTestListener.count = testContext.getAllTestMethods().length;
+		System.out.println("onfinsh总数----------"+AutoTestListener.count);
+		AutoTestListener.failCount = testContext.getFailedTests().getAllResults().size();
+		System.out.println("onfinsh失败----------"+AutoTestListener.failCount);
+		AutoTestListener.successCount = testContext.getPassedTests().getAllResults().size();
+		System.out.println("onfinsh成功---------"+AutoTestListener.successCount);
+		AutoTestListener.skipCount = testContext.getSkippedTests().getAllResults().size();
+		System.out.println("onfinsh略过----------"+AutoTestListener.skipCount);
+		
+		String content= "<p>本次测试执行结果：成功<font color=\"#3F9F00\">"+successCount +"</font> 失败：<font color=\"#FF252D\">"+
+		failCount +"</font>略过： <font color=\"#0078D7\">"
+    			+skipCount +"</font> 通过率：<font color=\"#000000\">"+successCount/count*100+" %</font></p>";
+		try {
+			MailUtil.sendMail(content);
+		} catch (AddressException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (javax.mail.MessagingException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private int getId(ITestResult result) {

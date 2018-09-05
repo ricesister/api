@@ -1,5 +1,9 @@
 package com.sen.api.utils;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,16 +27,30 @@ public class MailUtil {
     private static String username;  
     private static String password;  
     private static String from;  
-    private static String nick;  
+    private static String nick; 
+    private static String start;
+    private static String port;
+    private static String sendToMails;
+    private static String send_file;
   
     static {  
+    	Properties prop = new Properties();
+    	 // 通过输入缓冲流进行读取配置文件
+    	// 加载输入流
+    	// 根据关键字获取value值
         try {  
+        	InputStream InputStream = new BufferedInputStream(new FileInputStream(new File("resources/mailConfig.properties")));
+        	prop.load(InputStream);
             // Test Data  
-            host = "smtp.163.com";  
-            username = "m18868196139_3@163.com";  
-            password = "78LXlx";  
-            from = "m18868196139_3@163.com";  
+            host = prop.getProperty("host");;  
+            username = prop.getProperty("username"); 
+            password = prop.getProperty("password");  
+            from = prop.getProperty("mailFrom"); 
             nick = "ZDHinfo";  
+            start = prop.getProperty("start");
+            port = prop.getProperty("mailPort");
+            sendToMails =  prop.getProperty("toMails");
+            send_file = prop.getProperty("files");
             // nick + from 组成邮箱的发件人信息  
         } catch (Exception e) {  
             e.printStackTrace();  
@@ -73,7 +91,7 @@ public class MailUtil {
         // 创建信件服务器  
         props.put("mail.smtp.host", host);  
         props.put("mail.smtp.auth", "true"); // 通过验证  
-        props.put("mail.smtp.port", "465");
+        props.put("mail.smtp.port", port);
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.ssl.enable", "true");
        //props.put("mail.debug", "true");
@@ -95,13 +113,14 @@ public class MailUtil {
                 msg.addRecipients(Message.RecipientType.TO, address);  
                 msg.setSubject(subject);  
                 // 后面的BodyPart将加入到此处创建的Multipart中  
-                Multipart mp = new MimeMultipart();  
+                Multipart mp = new MimeMultipart("related");  
                 // 附件操作  
                 if (filepath != null && filepath.size() > 0) {  
                     for (String filename : filepath) {  
                         MimeBodyPart mbp = new MimeBodyPart();  
                         // 得到数据源  
                         FileDataSource fds = new FileDataSource(filename);  
+                        mbp.setContent(body, "text/html; charset=utf-8");
                         // 得到附件本身并至入BodyPart  
                         mbp.setDataHandler(new DataHandler(fds));  
                         // 得到文件名同样至入BodyPart  
@@ -110,6 +129,7 @@ public class MailUtil {
                     }  
                     MimeBodyPart mbp = new MimeBodyPart();  
                     mbp.setText(body);  
+                    mbp.setContent(body, "text/html; charset=utf-8");
                     mp.addBodyPart(mbp);  
                     // 移走集合中的所有元素  
                     filepath.clear();  
@@ -139,14 +159,52 @@ public class MailUtil {
         }  
     }  
   
-    public static void main(String[] args) throws AddressException,  
-            UnsupportedEncodingException, MessagingException {  
-    	List<String> sendPath = new ArrayList<String>();
-    	System.out.println(System.getProperty("user.dir"));
-    	sendPath.add(System.getProperty("user.dir")+"\\target\\test-output\\index.html");
-    	System.out.println(System.getProperty("user.dir")+"\\target\\test-output\\index.html");
-        sendMail("1029830946@qq.com", DateUtil.getDate()+"cps东经接口测试报告", "自动化测试报告，请下载后查看！", sendPath);
-        System.out.println(DateUtil.getDate()+"sendMail success!");
-    }  
+   /* public static void main(String[] args) throws AddressException,  
+    	UnsupportedEncodingException, MessagingException {  
+		if(!"true".equals(start) && "false".equals(start)) {
+			System.out.println("-------------------------邮件服务未开启-----------------------------------------------");
+			return;
+		}
+		List<String> sendPath = new ArrayList<String>();
+		String[] sendPaths = getSendFiles();
+		if(sendPaths.length == 1) {
+			sendPath.add(System.getProperty("user.dir")+sendPaths[0]);
+		}else {
+			for(int i=0;i<sendPaths.length;i++) {
+				sendPath.add(System.getProperty("user.dir")+sendPaths[i]);
+			}
+		}
+		sendMail(sendToMails, DateUtil.getDate()+"cps东经接口测试报告", "API自动化测试报告，请下载后查看！", sendPath);
+		System.out.println("-------------------------"+DateUtil.getDate()+"sendMail success!\n发送邮件列表："+sendToMails.toString());
+	}*/
+
+
+	public static String[] getSendFiles() {
+		String[] sendFiles = send_file.split(",");
+		return sendFiles;
+	}
+	
+	 public static void sendMail(String content) throws 
+	    AddressException, UnsupportedEncodingException, MessagingException {
+	    	System.out.println("接收到正文内容："+content);
+	    	if(!"true".equals(start) && "false".equals(start)) {
+	    		System.out.println("-------------------------邮件服务未开启-----------------------------------------------");
+	    		return;
+	    	}
+	    	List<String> sendPath = new ArrayList<String>();
+	    	String[] sendPaths = getSendFiles();
+	    	if(sendPaths.length == 1) {
+	    		sendPath.add(System.getProperty("user.dir")+sendPaths[0]);
+	    	}else {
+	    		for(int i=0;i<sendPaths.length;i++) {
+	    			sendPath.add(System.getProperty("user.dir")+sendPaths[i]);
+	    		}
+	    	}
+	        sendMail(sendToMails, DateUtil.getDate()+"cps东经ui测试报告", "ui自动化测试报告，请下载后查看！\n"
+	    			+content, sendPath);
+	        System.out.println("-------------------------"+DateUtil.getDate()+"sendMail success!\n发送邮件列表："+sendToMails.toString());
+	    	
+	    }
+	    
 
 }
