@@ -38,8 +38,9 @@ public class MailUtil {
     	 // 通过输入缓冲流进行读取配置文件
     	// 加载输入流
     	// 根据关键字获取value值
+    	String file = "mailConfig.properties";
         try {  
-        	InputStream InputStream = new BufferedInputStream(new FileInputStream(new File("resources/mailConfig.properties")));
+        	InputStream InputStream = MailUtil.class.getClassLoader().getResourceAsStream(file);
         	prop.load(InputStream);
             // Test Data  
             host = prop.getProperty("host");;  
@@ -200,7 +201,7 @@ public class MailUtil {
 	    			sendPath.add(System.getProperty("user.dir")+sendPaths[i]);
 	    		}
 	    	}
-	        sendMail(sendToMails, DateUtil.getDate()+"cps东经ui测试报告", "ui自动化测试报告，请下载后查看！\n"
+	        sendMail(sendToMails, DateUtil.getDate()+"cps东经API测试报告", "API自动化测试报告，请下载后查看！\n"
 	    			+content, sendPath);
 	        System.out.println("-------------------------"+DateUtil.getDate()+"sendMail success!\n发送邮件列表："+sendToMails.toString());
 	    	

@@ -1,20 +1,16 @@
 package com.sen.api.listeners;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.mail.internet.AddressException;
 
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.TestListenerAdapter;
 
-import com.sen.api.utils.MailUtil;
-import com.sun.xml.internal.messaging.saaj.packaging.mime.MessagingException;
 
 public class AutoTestListener extends TestListenerAdapter {
 	
@@ -102,7 +98,7 @@ public class AutoTestListener extends TestListenerAdapter {
 		
 		/**
 		 * 邮件处理
-		 */
+		 *//*
 		AutoTestListener.count = testContext.getAllTestMethods().length;
 		System.out.println("onfinsh总数----------"+AutoTestListener.count);
 		AutoTestListener.failCount = testContext.getFailedTests().getAllResults().size();
@@ -123,7 +119,7 @@ public class AutoTestListener extends TestListenerAdapter {
 			e.printStackTrace();
 		} catch (javax.mail.MessagingException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	private int getId(ITestResult result) {

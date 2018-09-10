@@ -71,7 +71,7 @@ public class ApiTest extends TestBase {
 	protected List<ApiDataBean> dataList = new ArrayList<ApiDataBean>();
 
 	
-	@Test(dataProvider = "cpsDatas")
+	@Test(dataProvider = "cpsDatas",timeOut=30000)
 	public void apiTest(ApiDataBean apiDataBean) throws Exception {
 		ClientConnectionManager connManager = new PoolingClientConnectionManager();
 		/**

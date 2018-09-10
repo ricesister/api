@@ -9,12 +9,19 @@ import com.aventstack.extentreports.model.TestAttribute;
 import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import com.aventstack.extentreports.reporter.configuration.ChartLocation;
 import com.aventstack.extentreports.reporter.configuration.Theme;
+import com.sen.api.utils.MailUtil;
 import com.sen.api.utils.ReportUtil;
+
+
 import org.testng.*;
 import org.testng.xml.XmlSuite;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.AddressException;
 
 
 public class ExtentTestNGIReporterListener implements IReporter {
@@ -30,6 +37,10 @@ public class ExtentTestNGIReporterListener implements IReporter {
         if(suites.size()>1){
             createSuiteNode=true;
         }
+        int allSuccess=0;
+        int allFailure = 0;
+        int allSkip = 0;
+        int allCount = 0;
         for (ISuite suite : suites) {
             Map<String, ISuiteResult>  result = suite.getResults();
             //如果suite里面没有任何用例，直接跳过，不在报告里生成
@@ -86,6 +97,10 @@ public class ExtentTestNGIReporterListener implements IReporter {
                 buildTestNodes(resultNode,context.getFailedTests(), Status.FAIL);
                 buildTestNodes(resultNode,context.getSkippedTests(), Status.SKIP);
                 buildTestNodes(resultNode,context.getPassedTests(), Status.PASS);
+                
+                allSuccess = context.getPassedTests().size();
+                allFailure = context.getFailedTests().size();
+                allSkip = context.getSkippedTests().size();
             }
             if(suiteTest!= null){
                 suiteTest.getModel().setDescription(String.format("Pass: %s ; Fail: %s ; Skip: %s ;",suitePassSize,suiteFailSize,suiteSkipSize));
@@ -98,6 +113,30 @@ public class ExtentTestNGIReporterListener implements IReporter {
 
         }
         extent.flush();
+        allCount = allSuccess +allSkip + allFailure;
+        sendContent(allSuccess, allFailure, allSkip, allCount);
+    }
+    
+    /**
+     * 发送邮件信息调用地方改动
+     * @param successCount
+     * @param failCount
+     * @param skipCount
+     * @param count
+     */
+    private void sendContent(int successCount,int failCount,int skipCount,int count) {
+    	String content= "<p>本次测试执行结果：成功<font color=\"#3F9F00\">"+successCount +"</font> 失败：<font color=\"#FF252D\">"+
+    			failCount +"</font>略过： <font color=\"#0078D7\">"
+    	    			+skipCount +"</font> 通过率：<font color=\"#000000\">"+(float)successCount/count*100+"% </font> 总执行数： <font color=\"#EFC50A\">"+count+"</font></p>";
+		try {
+			MailUtil.sendMail(content);
+		} catch (AddressException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
     }
 
     private void init() {
